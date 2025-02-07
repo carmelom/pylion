@@ -47,17 +47,17 @@ class Simulation(list):
         name = name.replace(" ", "_").lower()
 
         self.attrs = Attributes()
-        self.attrs['gpu'] = None
-        self.attrs['executable'] = 'lmp_serial'
-        self.attrs['thermo_styles'] = ['step', 'cpu']
-        self.attrs['timestep'] = 1e-6
-        self.attrs['domain'] = [1e-3, 1e-3, 1e-3]  # length, width, height
-        self.attrs['name'] = name
-        self.attrs['neighbour'] = {'skin': 1, 'list': 'nsq'}
-        self.attrs['coulombcutoff'] = 10
-        self.attrs['template'] = 'simulation.j2'
-        self.attrs['version'] = __version__
-        self.attrs['rigid'] = {'exists': False}
+        self.attrs["gpu"] = None
+        self.attrs["executable"] = "lmp"
+        self.attrs["thermo_styles"] = ["step", "cpu"]
+        self.attrs["timestep"] = 1e-6
+        self.attrs["domain"] = [1e-3, 1e-3, 1e-3]  # length, width, height
+        self.attrs["name"] = name
+        self.attrs["neighbour"] = {"skin": 1, "list": "nsq"}
+        self.attrs["coulombcutoff"] = 10
+        self.attrs["template"] = "simulation.j2"
+        self.attrs["version"] = __version__
+        self.attrs["rigid"] = {"exists": False}
 
         # # initalise the h5 file
         # with h5py.File(self.attrs['name'] + '.h5', 'w') as f:
@@ -128,7 +128,6 @@ class Simulation(list):
             # Not all elements have 'priority' keys. Cannot sort list
 
     def _writeinputfile(self):
-
         self.sort()  # if 'priority' keys exist
 
         odict = defaultdict(list)
@@ -192,25 +191,41 @@ class Simulation(list):
 
         self._writeinputfile()
 
-        def signal_handler(sig, frame):
-            print("Simulation terminated by the user.")
-            child.terminate()
-            # sys.exit(0)
+        # def signal_handler(sig, frame):
+        #     print("Simulation terminated by the user.")
+        #     child.terminate()
+        #     # sys.exit(0)
 
-        signal.signal(signal.SIGINT, signal_handler)
+        # signal.signal(signal.SIGINT, signal_handler)
 
-        child = pexpect.spawn(
-            " ".join([
+        # child = pexpect.spawn(
+        #     " ".join(
+        #         [
+        #             self.attrs["executable"],
+        #             "-log",
+        #             self.attrs["name"] + ".lmp.log",
+        #             "-in",
+        #             self.attrs["name"] + ".lammps",
+        #         ]
+        #     ),
+        #     timeout=None,
+        #     encoding="utf8",
+        # )
+
+        # self._process_stdout(child)
+        # child.close()
+
+        import subprocess
+
+        subprocess.run(
+            [
                 self.attrs["executable"],
-                "-log", self.attrs['name'] + ".lmp.log",
-                "-in", self.attrs["name"] + ".lammps",
-                ]),
-            timeout=None,
-            encoding="utf8",
+                "-log",
+                self.attrs["name"] + ".lmp.log",
+                "-in",
+                self.attrs["name"] + ".lammps",
+            ]
         )
-
-        self._process_stdout(child)
-        child.close()
 
         self._hasexecuted = True
 
