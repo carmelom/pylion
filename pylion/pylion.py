@@ -4,15 +4,12 @@ import jinja2 as j2
 import json
 from datetime import datetime
 from collections import defaultdict
+import subprocess
 import sys
 import time
 
 from .utils import save_atttributes_and_files
-
-if "win32" in sys.platform:
-    import wexpect as pexpect
-else:
-    import pexpect
+from .functions import check_particles_in_domain
 
 __version__ = "0.5.3"
 
@@ -157,6 +154,13 @@ class Simulation(list):
                 "'uid' count unless it is for the same ion group."
             )
 
+        # check if ions are within the domain
+        for ion in odict["species"]:
+            if not check_particles_in_domain(ion, self.attrs["domain"]):
+                raise SimulationError(
+                    f"Ions are of species={ion['uid']} are placed outside the simulation domain."
+                )
+
         # load jinja2 template
         env = j2.Environment(
             loader=j2.PackageLoader("pylion", "templates"), trim_blocks=True
@@ -215,8 +219,7 @@ class Simulation(list):
         # self._process_stdout(child)
         # child.close()
 
-        import subprocess
-
+        # TODO: manage SIGINT
         subprocess.run(
             [
                 self.attrs["executable"],

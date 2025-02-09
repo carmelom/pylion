@@ -303,7 +303,6 @@ def _rftrap(uid, trap):
 
 
 def _pseudotrap(uid, k, group="all"):
-
     lines = [f"\n# Pseudopotential approximation for Linear Paul trap... (fixID={uid})"]
 
     # Add a cylindrical SHO for the pseudopotential
@@ -402,6 +401,7 @@ def linearpaultrap(uid, trap, ions=None, all=True):
     else:
         return _rftrap(uid, trap)
 
+
 @lammps.variable("compute")
 def compute(uid, styles, group="all"):
     """Tells lammps to compute given styles to given group while simulation is running
@@ -417,6 +417,7 @@ def compute(uid, styles, group="all"):
 
     return {"code": lines}
 
+
 @lammps.variable("fix")
 def timeaverage(uid, steps, variables, style="ave/atom", **kwargs):
     """A variable in LAMMPS representing a time averaged quantity over a
@@ -429,7 +430,7 @@ def timeaverage(uid, steps, variables, style="ave/atom", **kwargs):
     """
 
     variables = " ".join(variables)
-    kwargs = ' '.join("{} {}".format(x,y) for x, y in kwargs.items())
+    kwargs = " ".join("{} {}".format(x, y) for x, y in kwargs.items())
 
     lines = [f"fix {uid} all {style} 1 {steps:d} {steps:d} {variables} {kwargs}\n"]
 
@@ -492,6 +493,12 @@ def trapaqtovoltage(ions, trap, a, q):
     oscV = -q * mass * radius**2 * (2 * np.pi * freq) ** 2 / (2 * charge)
 
     return oscV, endcapV
+
+
+def check_particles_in_domain(particles, domain):
+    particles = np.asarray(particles)
+    domain = np.asarray(domain)
+    return bool(np.all(np.abs(particles) < domain))
 
 
 def readdump(filename):
