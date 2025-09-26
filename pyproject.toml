@@ -1,0 +1,66 @@
+[project]
+name = "pylion"
+version = "0.5.3"
+description = "A LAMMPS wrapper for molecular dynamics simulations of trapped ions."
+readme = "readme.md"
+authors = [{ name = "Dimitris Trypogeorgos", email = "dtrypogiorgos@gmail.com" }]
+license = "MIT"
+keywords = ["pylion"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Developers",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3",
+]
+requires-python = ">=3.6"
+dependencies = [
+  "h5py>=2.7.0",
+  "termcolor>=1.1.0",
+  "numpy>=1.13.1",
+  "jinja2>=2.9.6",
+  "pexpect>=4.2.1; platform_system != 'Windows'",
+  "wexpect; platform_system == 'Windows'",
+]
+
+[dependency-groups]
+dev = [
+  "setuptools<81",
+  "wheel",
+  "bumpversion",
+  "pytest",
+  "ruff",
+]
+
+[build-system]
+requires = ["setuptools>=69,<81", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+zip-safe = false
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pylion"]
+
+[tool.setuptools.package-data]
+pylion = ["templates/*.j2"]
+
+
+[tool.pytest.ini_options]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+
+[tool.bumpversion]
+current_version = "0.5.3"
+commit = true
+tag = true
+
+[tool.bumpversion.file."pyproject.toml"]
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[tool.bumpversion.file."pylion/pylion.py"]
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
