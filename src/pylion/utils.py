@@ -70,9 +70,11 @@ def save_atttributes_and_files(func):
         attrs.save(attrs["name"] + ".h5")
         _savecallersource(attrs["name"] + ".h5")
 
-        for filename in (attrs['output_files']
-                         + [attrs['name'] + '.lmp.log', attrs['name'] + '.lammps']):
-            _savescriptsource(attrs['name'] + '.h5', filename)
+        for filename in attrs["output_files"] + [
+            attrs["name"] + ".lmp.log",
+            attrs["name"] + ".lammps",
+        ]:
+            _savescriptsource(attrs["name"] + ".h5", filename)
 
     return wrapper
 
@@ -96,7 +98,7 @@ def _savecallersource(h5file):
 
     # cannot save on the h5 file if using the repl
     warnings.warn(
-        "Caller source not saved. " "Are you running the simulation from the REPL?"
+        "Caller source not saved. Are you running the simulation from the REPL?"
     )
 
 

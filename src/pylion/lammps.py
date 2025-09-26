@@ -24,7 +24,6 @@ class CfgObject:
         functools.update_wrapper(self, func)
 
     def __call__(self, *args, **kwargs):
-
         func = self.func
 
         if getattr(self, "_unique_id", False):
@@ -84,7 +83,7 @@ class Variable(CfgObject):
         prefix = {"fix": "f_", "var": "v_", "compute": "c_"}
         vtype = self.odict["vtype"]
         name = self.odict["uid"]
-        output = " ".join([f"{prefix[vtype]}{name}[{i+1}]" for i in range(len(vs))])
+        output = " ".join([f"{prefix[vtype]}{name}[{i + 1}]" for i in range(len(vs))])
         self.odict.update({"output": output})
 
         return self.odict.copy()

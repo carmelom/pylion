@@ -166,8 +166,8 @@ def ionneutralheating(uid, ions, rate):
     lines = [
         "\n# Define ion-neutral heating for a species...",
         f"group {uid} type {iid}",
-        f'variable k{uid} equal "sqrt(dt * dt * dt * dt * 2 / {mass*au:e} * {rate:e})"',
-        f'variable k{uid} equal "sqrt(2 * {rate:e} * {mass*au:e} / 3 / dt)"',
+        f'variable k{uid} equal "sqrt(dt * dt * dt * dt * 2 / {mass * au:e} * {rate:e})"',
+        f'variable k{uid} equal "sqrt(2 * {rate:e} * {mass * au:e} / 3 / dt)"',
         f"variable f{uid}\t\tatom normal(0:d,v_k{uid},1337)",
         f"fix {uid} {iid} addforce v_f{uid} v_f{uid} v_f{uid}\n",
     ]
@@ -259,8 +259,8 @@ def _rftrap(uid, trap):
 
     for i, (v, f) in enumerate(zip(voltages, freqs)):
         lines.append(f"variable oscVx{uid}{i:d}\t\tequal {v:e}")
-        lines.append(f"variable oscVy{uid}{i:d}\t\tequal {anisotropy*v:e}")
-        lines.append(f'variable phase{uid}{i:d}\t\tequal "{2*np.pi*f:e} * step*dt"')
+        lines.append(f"variable oscVy{uid}{i:d}\t\tequal {anisotropy * v:e}")
+        lines.append(f'variable phase{uid}{i:d}\t\tequal "{2 * np.pi * f:e} * step*dt"')
         lines.append(
             f'variable oscConstx{uid}{i:d}\t\tequal "v_oscVx{uid}{i:d}/(v_radius{uid}*v_radius{uid})"'
         )
@@ -303,7 +303,6 @@ def _rftrap(uid, trap):
 
 
 def _pseudotrap(uid, k, group="all"):
-
     lines = [f"\n# Pseudopotential approximation for Linear Paul trap... (fixID={uid})"]
 
     # Add a cylindrical SHO for the pseudopotential
@@ -381,7 +380,7 @@ def linearpaultrap(uid, trap, ions=None, all=True):
         wr = 2 * np.pi * freq / 2 * np.sqrt(ar + qr**2 / 2)
         wz = 2 * np.pi * freq / 2 * np.sqrt(az)
 
-        print(f"Frequency of motion: fr = {wr/2/np.pi:e}, fz = {wz/2/np.pi:e}")
+        print(f"Frequency of motion: fr = {wr / 2 / np.pi:e}, fz = {wz / 2 / np.pi:e}")
 
         # Spring constants for force calculation.
         kr = wr**2 * mass
@@ -402,6 +401,7 @@ def linearpaultrap(uid, trap, ions=None, all=True):
     else:
         return _rftrap(uid, trap)
 
+
 @lammps.variable("compute")
 def compute(uid, styles, group="all"):
     """Tells lammps to compute given styles to given group while simulation is running
@@ -417,6 +417,7 @@ def compute(uid, styles, group="all"):
 
     return {"code": lines}
 
+
 @lammps.variable("fix")
 def timeaverage(uid, steps, variables, style="ave/atom", **kwargs):
     """A variable in LAMMPS representing a time averaged quantity over a
@@ -429,7 +430,7 @@ def timeaverage(uid, steps, variables, style="ave/atom", **kwargs):
     """
 
     variables = " ".join(variables)
-    kwargs = ' '.join("{} {}".format(x,y) for x, y in kwargs.items())
+    kwargs = " ".join("{} {}".format(x, y) for x, y in kwargs.items())
 
     lines = [f"fix {uid} all {style} 1 {steps:d} {steps:d} {variables} {kwargs}\n"]
 
