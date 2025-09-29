@@ -1,11 +1,29 @@
+import functools
 import inspect
 import os
+import random
 import sys
 import warnings
-import functools
+from pathlib import Path
+
 import h5py
 from termcolor import colored
-import random
+
+
+def search_lammps_executables(full_path=True):
+    """Find executables in PATH matching the pattern 'lmp*'."""
+    matches = []
+    pattern = "lmp*"
+    paths = os.environ.get("PATH", "").split(os.pathsep)
+    for path in paths:
+        path = Path(path)
+        for exe in path.glob(pattern):
+            print(f"Found {exe}")
+            matches.append(exe)
+    if full_path:
+        return matches
+    else:
+        return [exe.name for exe in matches]
 
 
 def pretty_repr(_cls):

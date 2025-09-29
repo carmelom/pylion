@@ -1,6 +1,7 @@
 import h5py
 import jinja2 as j2
 import json
+import shutil
 from datetime import datetime
 from collections import defaultdict
 import subprocess
@@ -10,7 +11,7 @@ from pathlib import Path
 from . import utils
 from .functions import check_particles_in_domain
 
-__version__ = "0.5.3"
+__version__ = "0.6.0"
 
 
 class SimulationError(Exception):
@@ -140,7 +141,7 @@ class Simulation(list):
 
         # do a couple of checks
         # check for uids clashing
-        uids = list(filter(None.__ne__, self._uids))
+        uids = [uid for uid in self._uids if uid is not None]
         if len(uids) > len(set(uids)):
             raise SimulationError(
                 "There are identical 'uids'. Although this is allowed in some "
@@ -194,6 +195,12 @@ class Simulation(list):
         if getattr(self, "_hasexecuted", False):
             raise SimulationError(
                 "Simulation has executed already. Do not run it again."
+            )
+
+        if not shutil.which(self.attrs["executable"]):
+            raise SimulationError(
+                f"Could not find executable '{self.attrs['executable']}'. "
+                "Make sure it is installed and in your PATH."
             )
 
         self._writeinputfile()

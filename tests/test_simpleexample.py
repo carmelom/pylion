@@ -26,7 +26,7 @@ def cleanup():
     p.rmdir()
 
 
-def test_simpleexample(simulation_data):
+def test_simpleexample(simulation_data, cleanup):
     trap, ions = simulation_data
     s = pl.Simulation("test")
 
