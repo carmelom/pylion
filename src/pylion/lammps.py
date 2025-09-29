@@ -1,5 +1,6 @@
-from .utils import validate_id, _unique_id, pretty_repr
 import functools
+
+from .utils import _unique_id, pretty_repr, validate_id
 
 
 @pretty_repr

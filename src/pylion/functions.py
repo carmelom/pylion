@@ -1,5 +1,6 @@
-from .lammps import lammps
 import numpy as np
+
+from .lammps import lammps
 
 
 @lammps.fix

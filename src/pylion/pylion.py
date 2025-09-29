@@ -1,12 +1,13 @@
+import json
+import os
+import shutil
+import subprocess
+from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+
 import h5py
 import jinja2 as j2
-import json
-import shutil
-from datetime import datetime
-from collections import defaultdict
-import subprocess
-import os
-from pathlib import Path
 
 from . import utils
 from .functions import check_particles_in_domain
