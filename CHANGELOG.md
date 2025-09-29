@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2025-09-29
+
+### Added
+
+- **BREAKING**: Run simulations in a dedicated folder and refactor file saving (`55cfa24`)
+  - The new behavior now is to create a sub folder with the same `name` of the simulation
+  - All simulation input/output files are now placed in the subfolder rather than in the current working directory
+  - This might break postprocessing workflows with hardcoded paths where to read simulation output, like `pl.readdump("positions.txt")`
+- Check for LAMMPS executable presence before attempting to run (`899c35e`)
+- New tests for README example (`57c87dc`)
+
+### Changed
+
+- **MAJOR**: Replaced p/wexpect usage with `subprocess.run()` for LAMMPS execution (`5000c08`, `f94cbe7`)
+  - User interface (`simulation.execute()`) remains the same
+  - It doesn't require installing OS-dependent package dependencies
+  - This required rewriting functionalities requiring to inspect the simulation output
+- Code formatting, import sorting, and import hygiene across the codebase (`a5bd468`, `4117860`, `17641f6`)
+
+### Fixed
+
+- Linting and test fixes (various small commits; see git log for details) (`a625ba9`)
+
 ## [0.6.0] - 2025-09-29
 
 ### Added
@@ -16,12 +39,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **BREAKING: Build system modernization**:
+  - Migrated from legacy `setup.py` to `pyproject.toml`
+  - Updated to use `setuptools>=69` with proper build backend
 - **BREAKING: Project structure reorganization**:
   - Moved all source code from `pylion/` to `src/pylion/` directory structure
   - This follows modern Python packaging best practices
-- **BREAKING: Build system modernization**:
-  - Migrated from legacy `setup.py` to `pyproject.toml`
-  - Updated to use `setuptools>=69,<81` with proper build backend
 - **Documentation improvements**: Updated `readme.md` with installation instructions for LAMMPS and the package
 - **Updated .gitignore**: Based on Github's [Python .gitignore](https://github.com/github/gitignore/blob/main/Python.gitignore)
 - **Code formatting**: Applied formatting using `ruff` across all project source files
