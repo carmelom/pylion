@@ -17,27 +17,15 @@ def simulation_data():
     return trap, ions
 
 
-@pytest.fixture
-def cleanup():
-    yield
-    p = Path("test")
-    for filename in p.iterdir():
-        filename.unlink()
-    p.rmdir()
-
-
 def test_simpleexample(simulation_data, cleanup):
     trap, ions = simulation_data
     s = pl.Simulation("test")
-
-    s.append(pl.createioncloud(ions, 1e-3, 100))
-
+    ions = pl.createioncloud(ions, 1e-3, 100)
+    ions["uid"] = 1  # explicitly define uid
+    s.append(ions)
     s.append(pl.linearpaultrap(trap))
-
     s.append(pl.langevinbath(0, 1e-5))
-
     s.append(pl.dump("positions.txt", variables=["x", "y", "z"], steps=10))
-
     s.append(pl.evolve(10))
     s.execute()
 

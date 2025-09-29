@@ -1,16 +1,20 @@
 import pytest
 import pylion as pl
 import numpy as np
-import os
 import itertools
 from numpy.fft import fft
 
 
 @pytest.fixture
 def simulation_data():
-    ions = {'mass': 40, 'charge': 1}
-    trap = {'radius': 1e-3, 'length': 1e-3, 'kappa': 0.5,
-            'frequency': 10e6, 'a': -0.001}
+    ions = {"mass": 40, "charge": 1}
+    trap = {
+        "radius": 1e-3,
+        "length": 1e-3,
+        "kappa": 0.5,
+        "frequency": 10e6,
+        "a": -0.001,
+    }
 
     return trap, ions
 
@@ -26,50 +30,46 @@ def simulation(simulation_data, request):
     trap, ions = simulation_data
     q, pseudo = request.param
 
-    trap['pseudo'] = pseudo
+    trap["pseudo"] = pseudo
 
-    v, ev = pl.trapaqtovoltage(ions, trap, trap['a'], q)
-    trap['voltage'], trap['endcapvoltage'] = v, ev
+    v, ev = pl.trapaqtovoltage(ions, trap, trap["a"], q)
+    trap["voltage"], trap["endcapvoltage"] = v, ev
 
-    name = 'secular'
+    name = "test"
 
     s = pl.Simulation(name)
 
     ions = pl.createioncloud(ions, 1e-3, 1)
     # explicitly define uids so that the test suite is happy
-    ions['uid'] = 1
+    ions["uid"] = 1
 
     s.append(ions)
     s.append(pl.linearpaultrap(trap, ions))
 
-    s.append(pl.dump('positions.txt', variables=['x', 'y', 'z'], steps=1))
+    s.append(pl.dump("positions.txt", variables=["x", "y", "z"], steps=1))
 
     s.append(pl.evolve(10000))
 
     s.execute()
 
-    yield s.attrs['timestep'], q
-
-    filenames = ['log.lammps', f'{name}.h5', f'{name}.lammps', 'positions.txt']
-    for filename in filenames:
-        os.remove(filename)
+    yield s.attrs["timestep"], q
 
 
-def test_secularfrequencies(simulation_data, simulation):
+def test_secularfrequencies(simulation_data, simulation, cleanup):
     trap, ions = simulation_data
     timestep, q = simulation
 
-    _, data = pl.readdump('positions.txt')
+    _, data = pl.readdump("test/positions.txt")
 
-    rfreq = (trap['frequency'] / 2 * np.sqrt(q ** 2 / 2 + trap['a']))
-    zfreq = (trap['frequency'] / 2 * np.sqrt(- 2 * trap['a']))
+    rfreq = trap["frequency"] / 2 * np.sqrt(q**2 / 2 + trap["a"])
+    zfreq = trap["frequency"] / 2 * np.sqrt(-2 * trap["a"])
 
     xf = np.linspace(0.0, 1 / (2 * timestep), len(data) // 2)
 
     # fabs = np.sum(fz * np.conj(fz), axis=1)[:n // 2].real
 
-    fz = np.abs(fft(data[..., 2], axis=0))[:len(data) // 2]
-    fr = np.abs(fft(data[..., 0], axis=0))[:len(data) // 2]
+    fz = np.abs(fft(data[..., 2], axis=0))[: len(data) // 2]
+    fr = np.abs(fft(data[..., 0], axis=0))[: len(data) // 2]
     indr = np.argmax(fr)
     indz = np.argmax(fz)
 

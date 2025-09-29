@@ -1,19 +1,9 @@
 import pytest
 import pylion as pl
 from pylion.pylion import SimulationError
-import os
 
 
-@pytest.fixture
-def cleanup():
-    yield
-    for filename in ["test.h5", "test.lammps"]:
-        try:
-            os.remove(filename)
-        except FileNotFoundError:
-            pass
-
-
+@pytest.mark.skip(reason="UIDs are now random by default")
 def test_unique_id(cleanup):
     s = pl.Simulation("test")
 

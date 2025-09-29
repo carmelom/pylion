@@ -17,6 +17,7 @@ from .functions import (
     timeaverage,
     trapaqtovoltage,
 )
+from .lammps import lammps
 from .pylion import Attributes, Simulation, SimulationError, __version__
 
 __author__ = """Dimitris Trypogeorgos"""
@@ -47,4 +48,6 @@ __all__ = [
     "trapaqtovoltage",
     "check_particles_in_domain",
     "readdump",
+    # decorators
+    "lammps",
 ]
