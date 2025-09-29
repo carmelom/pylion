@@ -1,6 +1,6 @@
 [project]
 name = "pylion"
-version = "0.5.3"
+version = "0.6.0"
 description = "A LAMMPS wrapper for molecular dynamics simulations of trapped ions."
 readme = "readme.md"
 authors = [{ name = "Dimitris Trypogeorgos", email = "dtrypogiorgos@gmail.com" }]
@@ -24,7 +24,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "setuptools<81",
+  "setuptools>=69",
   "wheel",
   "bump-my-version",
   "pytest",
@@ -32,7 +32,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["setuptools>=69,<81", "wheel"]
+requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -53,7 +53,7 @@ markers = [
 ]
 
 [tool.bumpversion]
-current_version = "0.5.3"
+current_version = "0.6.0"
 commit = true
 tag = true
 
