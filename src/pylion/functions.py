@@ -495,6 +495,12 @@ def trapaqtovoltage(ions, trap, a, q):
     return oscV, endcapV
 
 
+def check_particles_in_domain(particles, domain):
+    particles = np.asarray(particles)
+    domain = np.asarray(domain)
+    return bool(np.all(np.abs(particles) < domain))
+
+
 def readdump(filename):
     """Reads data from the given dump file. The dump should be a file
     with atom quantities in the order `id vargout`, e.g. `id vx vy vz`.

@@ -1,18 +1,14 @@
 import h5py
-import signal
 import jinja2 as j2
 import json
 from datetime import datetime
 from collections import defaultdict
-import sys
-import time
+import subprocess
+import os
+from pathlib import Path
 
-from .utils import save_atttributes_and_files
-
-if "win32" in sys.platform:
-    import wexpect as pexpect
-else:
-    import pexpect
+from . import utils
+from .functions import check_particles_in_domain
 
 __version__ = "0.5.3"
 
@@ -48,7 +44,7 @@ class Simulation(list):
 
         self.attrs = Attributes()
         self.attrs["gpu"] = None
-        self.attrs["executable"] = "lmp_serial"
+        self.attrs["executable"] = "lmp"
         self.attrs["thermo_styles"] = ["step", "cpu"]
         self.attrs["timestep"] = 1e-6
         self.attrs["domain"] = [1e-3, 1e-3, 1e-3]  # length, width, height
@@ -58,6 +54,10 @@ class Simulation(list):
         self.attrs["template"] = "simulation.j2"
         self.attrs["version"] = __version__
         self.attrs["rigid"] = {"exists": False}
+
+        directory = (Path.cwd() / name).resolve()
+        directory.mkdir(exist_ok=True, parents=True)
+        self.attrs["directory"] = os.fspath(directory)
 
         # # initalise the h5 file
         # with h5py.File(self.attrs['name'] + '.h5', 'w') as f:
@@ -157,6 +157,13 @@ class Simulation(list):
                 "'uid' count unless it is for the same ion group."
             )
 
+        # check if ions are within the domain
+        for ion in odict["species"]:
+            if not check_particles_in_domain(ion["positions"], self.attrs["domain"]):
+                raise SimulationError(
+                    f"Ions are of species={ion['uid']} are placed outside the simulation domain."
+                )
+
         # load jinja2 template
         env = j2.Environment(
             loader=j2.PackageLoader("pylion", "templates"), trim_blocks=True
@@ -164,7 +171,8 @@ class Simulation(list):
         template = env.get_template(self.attrs["template"])
         rendered = template.render({**self.attrs, **odict})
 
-        with open(self.attrs["name"] + ".lammps", "w") as f:
+        filepath = Path(self.attrs["directory"], self.attrs["name"] + ".lammps")
+        with open(filepath, "w") as f:
             f.write(rendered)
 
         # get a few more attrs now that the lammps file is written
@@ -180,7 +188,6 @@ class Simulation(list):
             if line.startswith("dump")
         ]
 
-    @save_atttributes_and_files
     def execute(self):
         """Write lammps input file and run the simulation."""
 
@@ -191,48 +198,83 @@ class Simulation(list):
 
         self._writeinputfile()
 
-        def signal_handler(sig, frame):
-            print("Simulation terminated by the user.")
-            child.terminate()
-            # sys.exit(0)
+        # def signal_handler(sig, frame):
+        #     print("Simulation terminated by the user.")
+        #     child.terminate()
+        #     # sys.exit(0)
 
-        signal.signal(signal.SIGINT, signal_handler)
+        # signal.signal(signal.SIGINT, signal_handler)
 
-        child = pexpect.spawn(
-            " ".join(
-                [
-                    self.attrs["executable"],
-                    "-log",
-                    self.attrs["name"] + ".lmp.log",
-                    "-in",
-                    self.attrs["name"] + ".lammps",
-                ]
-            ),
-            timeout=None,
-            encoding="utf8",
+        # child = pexpect.spawn(
+        #     " ".join(
+        #         [
+        #             self.attrs["executable"],
+        #             "-log",
+        #             self.attrs["name"] + ".lmp.log",
+        #             "-in",
+        #             self.attrs["name"] + ".lammps",
+        #         ]
+        #     ),
+        #     timeout=None,
+        #     encoding="utf8",
+        # )
+
+        # self._process_stdout(child)
+        # child.close()
+
+        # TODO: manage SIGINT
+        subprocess.run(
+            [
+                self.attrs["executable"],
+                "-log",
+                self.attrs["name"] + ".lmp.log",
+                "-in",
+                self.attrs["name"] + ".lammps",
+            ],
+            cwd=self.attrs["directory"],
         )
-
-        self._process_stdout(child)
-        child.close()
 
         self._hasexecuted = True
 
-    def _process_stdout(self, child):
-        atoms = 0
-        for line in child:
-            line = line.rstrip("\r\n")
-            if line == "Created 1 atoms":
-                atoms += 1
-                continue
-            elif line == "Created 0 atoms":
-                raise SimulationError(
-                    "lammps created 0 atoms - perhaps you placed ions "
-                    "with positions outside the simulation domain?"
-                )
+        # save everything at the end
+        # so if the simulation fails the h5file is not even created
+        self._save_attributes_and_files()
 
-            if atoms:
-                print(f"Created {atoms} atoms.")
-                atoms = False
-                continue
+    def _save_attributes_and_files(self):
+        attrs = self.attrs
 
-            print(line)
+        # initalise the h5 file
+        h5file = Path(attrs["directory"], attrs["name"] + ".h5")
+        with h5py.File(h5file, "w") as f:  # noqa: F841
+            pass
+
+        # save attrs and scripts to h5 file
+        attrs.save(h5file)
+        utils._savecallersource(h5file)
+
+        for filename in attrs["output_files"] + [
+            attrs["name"] + ".lmp.log",
+            attrs["name"] + ".lammps",
+        ]:
+            filepath = str(Path(attrs["directory"]) / filename)
+            utils._savescriptsource(h5file, filepath)
+
+    # def _process_stdout(self, child):
+    #     atoms = 0
+    #     for line in child:
+    #         line = line.rstrip("\r\n")
+    #         if line == "Created 1 atoms":
+    #             atoms += 1
+    #             continue
+    #         elif line == "Created 0 atoms":
+    #             raise SimulationError(
+    #                 "lammps created 0 atoms - perhaps you placed ions "
+    #                 "with positions outside the simulation domain?"
+    #             )
+
+    #         if atoms:
+    #             print(f"Created {atoms} atoms.")
+    #             atoms = False
+    #             continue
+
+    #         print(line)
