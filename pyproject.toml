@@ -12,14 +12,12 @@ classifiers = [
   "Natural Language :: English",
   "Programming Language :: Python :: 3",
 ]
-requires-python = ">=3.6"
+requires-python = ">=3.8"
 dependencies = [
   "h5py>=2.7.0",
   "termcolor>=1.1.0",
   "numpy>=1.13.1",
   "jinja2>=2.9.6",
-  "pexpect>=4.2.1; platform_system != 'Windows'",
-  "wexpect; platform_system == 'Windows'",
 ]
 
 [dependency-groups]
