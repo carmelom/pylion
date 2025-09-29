@@ -204,7 +204,7 @@ def langevinbath(uid, temperature, dampingtime):
 def lasercool(uid, ions, k):
     """Simulates laser cooling of a particular ion species by damping the
     velocity of the ions. kx, ky, kz define the strength of the damping force,
-    which is of the form :math:`f_i = - k_i * v_i`.
+    which is of the form :math:`f_i = - k_i * mass * v_i`.
 
     See Also: langevinbath
 
@@ -403,6 +403,32 @@ def linearpaultrap(uid, trap, ions=None, all=True):
         return _rftrap(uid, trap)
 
 
+@lammps.fix
+def harmonicpotential(uid, ions, trap_frequencies):
+    """Apply a static, three-dimensional harmonic potential to an ion species.
+
+    :param ions: dict describing the ion species (expects keys 'uid' and 'mass')
+    :param trap_frequencies: iterable (fx, fy, fz) of trap frequencies in Hz
+    """
+
+    # Spring constants for force calculation.
+    group = ions["uid"]
+    mass = ions["mass"] * 1.66e-27
+    fx, fy, fz = trap_frequencies
+
+    # convert Hz -> angular frequency and compute k = m * omega^2
+    kx = (2 * np.pi * fx) ** 2 * mass
+    ky = (2 * np.pi * fy) ** 2 * mass
+    kz = (2 * np.pi * fz) ** 2 * mass
+
+    odict = {}
+    odict["timestep"] = 1 / max(fx, fy, fz) / 10
+    sho = _pseudotrap(uid, (kx, ky, kz), group)
+    odict.update(sho)
+
+    return odict
+
+
 @lammps.variable("compute")
 def compute(uid, styles, group="all"):
     """Tells lammps to compute given styles to given group while simulation is running
@@ -469,7 +495,7 @@ def dump(uid, filename, variables, steps=10, group="all"):
     try:
         names = variables["output"]
         lines.extend(variables["code"])
-    except:
+    except TypeError:
         names = " ".join(variables)
 
     lines.append(f"dump {uid} {group} custom {steps:d} {filename} id {names}\n")
@@ -513,7 +539,6 @@ def readdump(filename):
 
     steps = []
     data = []
-    import time
 
     with open(filename, "r") as f:
         for line in f:

@@ -6,6 +6,7 @@ from .functions import (
     dump,
     efield,
     evolve,
+    harmonicpotential,
     ionneutralheating,
     langevinbath,
     lasercool,
@@ -48,6 +49,7 @@ __all__ = [
     "dump",
     "trapaqtovoltage",
     "check_particles_in_domain",
+    "harmonicpotential",
     "readdump",
     # decorators
     "lammps",
