@@ -54,11 +54,3 @@ markers = [
 current_version = "0.6.0"
 commit = true
 tag = true
-
-[tool.bumpversion.file."pyproject.toml"]
-search = 'version = "{current_version}"'
-replace = 'version = "{new_version}"'
-
-[tool.bumpversion.file."src/pylion/pylion.py"]
-search = '__version__ = "{current_version}"'
-replace = '__version__ = "{new_version}"'

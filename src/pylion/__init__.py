@@ -1,3 +1,4 @@
+from ._version import __version__
 from .functions import (
     check_particles_in_domain,
     compute,
@@ -18,7 +19,7 @@ from .functions import (
     trapaqtovoltage,
 )
 from .lammps import lammps
-from .pylion import Attributes, Simulation, SimulationError, __version__
+from .pylion import Attributes, Simulation, SimulationError
 
 __author__ = """Dimitris Trypogeorgos"""
 __email__ = "dtrypogiorgos@gmail.com"

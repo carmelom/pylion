@@ -10,9 +10,8 @@ import h5py
 import jinja2 as j2
 
 from . import utils
+from ._version import __version__
 from .functions import check_particles_in_domain
-
-__version__ = "0.6.0"
 
 
 class SimulationError(Exception):
