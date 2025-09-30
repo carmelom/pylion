@@ -400,8 +400,8 @@ def linearpaultrap(uid, trap, ions=None, all=True):
 
     :param trap: dictionary containing trap parameters
     :param ions: species to be used for pseudopotential
-    :param all: boolean that chooses beteween the pseudopotential applied to
-      all the ions in the simulation or just a single species
+    :param all: boolean to select whether to apply the potential to all ions
+      in the simulation or just the species described by 'ions'
     """
 
     if trap.get("pseudo"):
@@ -432,10 +432,7 @@ def linearpaultrap(uid, trap, ions=None, all=True):
         odict = {}
         odict["timestep"] = 1 / max(wz, wr) / 10
 
-        if all:
-            group = "all"
-        else:
-            group = ions["uid"]
+        group = "all" if all else ions["uid"]
 
         sho = _pseudotrap(uid, (kr, anisotropy * kr, kz), group)
 
@@ -476,15 +473,17 @@ def staticquadrupole(uid, ions, trap_frequency_z, offset=(0, 0), all=True):
 
 
 @lammps.fix
-def harmonicpotential(uid, ions, trap_frequencies):
+def harmonicpotential(uid, ions, trap_frequencies, all=True):
     """Apply a static, three-dimensional harmonic potential to an ion species.
 
     :param ions: dict describing the ion species (expects keys 'uid' and 'mass')
     :param trap_frequencies: iterable (fx, fy, fz) of trap frequencies in Hz
+    :param all: boolean to select wether to apply the potential to all ions
+      in the simulation or just the species described by 'ions'
     """
 
     # Spring constants for force calculation.
-    group = ions["uid"]
+    group = "all" if all else ions["uid"]
     mass = ions["mass"] * 1.66e-27
     fx, fy, fz = trap_frequencies
 
@@ -525,7 +524,7 @@ def timeaverage(uid, steps, variables, style="ave/atom", **kwargs):
     :param steps: number of steps to average over
     :param variables: list of variables to be averaged
     :param style: style name of this fix command (defaults to 'ave/atom')
-    :param \**kwargs: Arbitrary keyword arguments recognised by lammps
+    :param **kwargs: Arbitrary keyword arguments recognised by lammps
     """
 
     variables = " ".join(variables)
