@@ -62,7 +62,7 @@ def createioncloud(ions, radius, number):
     LAMMPS does have a function that can create ions in a cloud-like
     configuration, but it requires a lattice to be declared, and is
     prone to overlapping ions. As a result, we instead calculate individual
-    positions and palce them by hand.
+    positions and place them by hand.
 
     :param ions: dict with keys 'charge', 'mass'
     :param radius: radius of cloud
@@ -99,6 +99,31 @@ def evolve(steps):
     """
 
     lines = ["\n# Run simulation", f"run {int(steps):d}\n"]
+
+    return {"code": lines}
+
+
+@lammps.command
+def setvelocity(vx, vy, vz, group="all"):
+    """Sets the velocity of a group of atoms to (vx, vy, vz).
+
+    Example:
+
+    >>> setVelocity(0, 0, 0, group="all")
+
+    See Also: http://lammps.sandia.gov/doc/velocity.html
+
+    :param uid: unique ID for this command
+    :param vx: x component of velocity
+    :param vy: y component of velocity
+    :param vz: z component of velocity
+    :param group: group-ID of atoms to set the velocity for
+    """
+
+    lines = [
+        "\n# Set velocity",
+        f"velocity {group} set {vx:e} {vy:e} {vz:e} sum no\n",
+    ]
 
     return {"code": lines}
 
