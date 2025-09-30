@@ -1,5 +1,6 @@
 from ._version import __version__
 from .functions import (
+    bfield,
     check_particles_in_domain,
     compute,
     createioncloud,
@@ -34,6 +35,7 @@ __all__ = [
     "__version__",
     # functions / utilities
     "efield",
+    "bfield",
     "placeions",
     "createioncloud",
     "evolve",

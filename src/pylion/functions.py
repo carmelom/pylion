@@ -20,6 +20,23 @@ def efield(uid, ex, ey, ez):
     return {"code": lines}
 
 
+@lammps.fix
+def bfield(uid, bx, by, bz):
+    """Adds a uniform, time-independent magnetic field to the simulation.
+    bx, by, bz are the magnitudes of the magnetic field in T.
+
+    See Also: http://lammps.sandia.gov/doc/fix_bfield.html
+
+    :param bx: x component of magnetic field
+    :param by: y component of magnetic field
+    :param bz: z component of magnetic field
+    """
+
+    lines = ["\n# Static B-field", f"fix {uid} all bfield {bx:e} {by:e} {bz:e}"]
+
+    return {"code": lines}
+
+
 @lammps.ions
 def placeions(ions, positions):
     """Places the given ions at the (x, y, z) coordinates specified.
