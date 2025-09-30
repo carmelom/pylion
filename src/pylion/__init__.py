@@ -17,6 +17,7 @@ from .functions import (
     readdump,
     setvelocity,
     squaresum,
+    staticquadrupole,
     thermalvelocities,
     timeaverage,
     trapaqtovoltage,
@@ -54,6 +55,7 @@ __all__ = [
     "trapaqtovoltage",
     "check_particles_in_domain",
     "harmonicpotential",
+    "staticquadrupole",
     "readdump",
     # decorators
     "lammps",

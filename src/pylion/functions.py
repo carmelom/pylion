@@ -446,6 +446,36 @@ def linearpaultrap(uid, trap, ions=None, all=True):
 
 
 @lammps.fix
+def staticquadrupole(uid, ions, trap_frequency_z, offset=(0, 0), all=True):
+    """Applies a static quadrupole potential to an ion species.
+
+    :param ions: dict describing the ion species (expects keys 'uid' and 'mass')
+    :param trap_frequency_z: axial trap frequency in Hz
+    :param all: boolean to select wether to apply the potential to all ions
+      in the simulation or just the species described by 'ions'
+    """
+    group = "all" if all else ions["uid"]
+    mass = ions["mass"] * 1.66e-27
+    charge = ions["charge"] * 1.6e-19
+    # Spring constants for force calculation.
+    kz = (2 * np.pi * trap_frequency_z) ** 2 * mass / charge
+
+    xpos = "x" if offset[0] == 0 else f"(x-{offset[0]:e})"
+    ypos = "y" if offset[1] == 0 else f"(y-{offset[1]:e})"
+
+    lines = [
+        "\n# Static quadrupole electric field",
+        f"variable quadConstZ{uid}\t\tequal {kz:e}",
+        f'variable quadEX{uid} atom "v_quadConstZ{uid} * 0.5 * {xpos}"',
+        f'variable quadEY{uid} atom "v_quadConstZ{uid} * 0.5 * {ypos}"',
+        f'variable quadEZ{uid} atom "v_quadConstZ{uid} * -z"',
+        f"fix {uid} {group} efield v_quadEX{uid} v_quadEY{uid} v_quadEZ{uid}\n",
+    ]
+
+    return {"code": lines}
+
+
+@lammps.fix
 def harmonicpotential(uid, ions, trap_frequencies):
     """Apply a static, three-dimensional harmonic potential to an ion species.
 
