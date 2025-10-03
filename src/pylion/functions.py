@@ -318,15 +318,8 @@ def _rftrap(uid, trap):
     xc = []
     yc = []
 
-    xpos = f"(x-{offset[0]:e})"
-    ypos = f"(y-{offset[1]:e})"
-
-    # Simplify this case for 0 displacement
-    if offset[0] == 0:
-        xpos = "x"
-
-    if offset[1] == 0:
-        ypos = "y"
+    xpos = "x" if offset[0] == 0 else f"(x-{offset[0]:e})"
+    ypos = "y" if offset[1] == 0 else f"(y-{offset[1]:e})"
 
     for i, _ in enumerate(voltages):
         xc.append(f"v_oscConstx{uid}{i:d} * cos(v_phase{uid}{i:d}) * {xpos}")
@@ -338,7 +331,13 @@ def _rftrap(uid, trap):
     lines.append(f'variable oscEX{uid} atom "{xc} + v_statConst{uid} * {xpos}"')
     lines.append(f'variable oscEY{uid} atom "{yc} + v_statConst{uid} * {ypos}"')
     lines.append(f'variable statEZ{uid} atom "v_statConst{uid} * 2 * -z"')
-    lines.append(f"fix {uid} all efield v_oscEX{uid} v_oscEY{uid} v_statEZ{uid}\n")
+    lines.append(
+        f'variable oscEnergy{uid} atom "- 0.5 * q * (v_oscEX{uid} * {xpos} + v_oscEY{uid} * {ypos} + v_statEZ{uid} * z)"'
+    )
+    lines.append(
+        f"fix {uid} all efield v_oscEX{uid} v_oscEY{uid} v_statEZ{uid} energy v_oscEnergy{uid}"
+    )
+    lines.append(f"fix_modify {uid} energy yes\n")
 
     odict.update({"code": lines})
 
@@ -359,8 +358,9 @@ def _pseudotrap(uid, k, group="all"):
         f'variable fX{uid} atom "-v_k_x{uid} * x"',
         f'variable fY{uid} atom "-v_k_y{uid} * y"',
         f'variable fZ{uid} atom "-v_k_z{uid} * z"',
-        f'variable E{uid} atom "v_k_x{uid} * x * x / 2 + v_k_y{uid} * y * y / 2 + v_k_z{uid} * z * z / 2"',
-        f"fix {uid} {group} addforce v_fX{uid} v_fY{uid} v_fZ{uid} energy v_E{uid}\n",
+        f'variable pseudoEnergy{uid} atom "v_k_x{uid} * x * x / 2 + v_k_y{uid} * y * y / 2 + v_k_z{uid} * z * z / 2"',
+        f"fix {uid} {group} addforce v_fX{uid} v_fY{uid} v_fZ{uid} energy v_pseudoEnergy{uid}",
+        f"fix_modify {uid} energy yes\n",
     ]
 
     lines.extend(sho)
@@ -470,8 +470,9 @@ def staticquadrupole(uid, ions, trap_frequency_z, offset=(0, 0), all=True):
         f'variable quadEX{uid} atom "v_quadConstZ{uid} * 0.5 * {xpos}"',
         f'variable quadEY{uid} atom "v_quadConstZ{uid} * 0.5 * {ypos}"',
         f'variable quadEZ{uid} atom "v_quadConstZ{uid} * -z"',
-        f'variable quadEnergy{uid} atom "0.5 * v_quadConstZ{uid} * (0.5*{xpos}^2 + 0.5*{ypos}^2 + z^2)"',
-        f"fix {uid} {group} efield v_quadEX{uid} v_quadEY{uid} v_quadEZ{uid} energy v_quadEnergy{uid}\n",
+        f'variable quadEnergy{uid} atom "- 0.5 * q * (v_quadEX{uid} * {xpos} + v_quadEY{uid} * {ypos} + v_quadEZ{uid} * z)"',
+        f"fix {uid} {group} efield v_quadEX{uid} v_quadEY{uid} v_quadEZ{uid} energy v_quadEnergy{uid}",
+        f"fix_modify {uid} energy yes\n",
     ]
 
     return {"code": lines}

@@ -98,10 +98,52 @@ def simulation(simulation_data, request):
     yield request.param
 
 
+@pytest.fixture(params=[2, 3, 5, 7, 8])
+def simulation_minimise(simulation_data, request):
+    trap, ions = simulation_data
+
+    v, ev = pl.trapaqtovoltage(ions, trap, trap["a"], 0.3)
+    trap["voltage"], trap["endcapvoltage"] = v, ev
+    trap["pseudo"] = True
+    name = "test"
+
+    s = pl.Simulation(name)
+
+    ions = pl.createioncloud(ions, 1e-3, request.param)
+    # explicitly define uids so that the test suite is happy
+    ions["uid"] = 1
+
+    s.append(ions)
+    s.append(pl.linearpaultrap(trap, ions))
+    s.append(pl.dump("positions.txt", variables=["x", "y", "z"]))
+    s.append(pl.minimise(0, 1e-24, int(1e5), int(1e8), 1e-5))
+
+    s.execute()
+
+    yield request.param
+
+
 def test_equilibriumseparation(simulation_data, lengthscale, simulation, cleanup):
     trap, ions = simulation_data
     lscale = lengthscale
     number = simulation
+
+    _, data = pl.readdump("test/positions.txt")
+
+    # lscale = lengthscale(trap, ions)
+    pos = posintheory(number)
+
+    final_positions = np.sort(data[-1, :, 2] / lscale)
+
+    assert final_positions == pytest.approx(pos, 1e-1, 1e-1)
+
+
+def test_equilibriumseparation_minimise(
+    simulation_data, lengthscale, simulation_minimise, cleanup
+):
+    trap, ions = simulation_data
+    lscale = lengthscale
+    number = simulation_minimise
 
     _, data = pl.readdump("test/positions.txt")
 
