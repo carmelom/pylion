@@ -277,7 +277,7 @@ def _rftrap(uid, trap):
     radius = trap["radius"]
     length = trap["length"]
     kappa = trap["kappa"]
-    anisotropy = trap.get("anisotropy", 1)
+    anisotropy = trap.get("anisotropy", 0)
     offset = trap.get("offset", (0, 0))
 
     odict["timestep"] = 1 / np.max(trap["frequency"]) / 20
@@ -301,8 +301,8 @@ def _rftrap(uid, trap):
         freqs.append(trap["frequency"])
 
     for i, (v, f) in enumerate(zip(voltages, freqs)):
-        lines.append(f"variable oscVx{uid}{i:d}\t\tequal {v:e}")
-        lines.append(f"variable oscVy{uid}{i:d}\t\tequal {anisotropy * v:e}")
+        lines.append(f"variable oscVx{uid}{i:d}\t\tequal {(1 + anisotropy) * v:e}")
+        lines.append(f"variable oscVy{uid}{i:d}\t\tequal {(1 - anisotropy) * v:e}")
         lines.append(f'variable phase{uid}{i:d}\t\tequal "{2 * np.pi * f:e} * step*dt"')
         lines.append(
             f'variable oscConstx{uid}{i:d}\t\tequal "v_oscVx{uid}{i:d}/(v_radius{uid}*v_radius{uid})"'
@@ -383,7 +383,9 @@ def linearpaultrap(uid, trap, ions=None, all=True):
 
     The are also three optional parameters:
     - 'anisotropy', is used to imbalance fields in x and y directions,
-    such that V_y = anisotropy * V_x. Defaults to 1.
+    such that:
+        - V_x = (1 + anisotropy) * voltage, and
+        - V_y = (1 - anisotropy) * voltage. Defaults to 0 (symmetric trap).
     - 'offset', moves the center of the trap away from the rf-null axis.
     Defaults to (0, 0).
     - 'pseudo', boolean to choose between the full rf trap or the corresponding
@@ -413,7 +415,7 @@ def linearpaultrap(uid, trap, ions=None, all=True):
         kappa = trap["kappa"]
         freq = trap["frequency"]
         voltage = trap["voltage"]
-        anisotropy = trap.get("anisotropy", 1)
+        anisotropy = trap.get("anisotropy", 0)
 
         ar = -4 * charge * kappa * ev / (mass * length**2 * (2 * np.pi * freq) ** 2)
         az = -2 * ar
@@ -434,7 +436,9 @@ def linearpaultrap(uid, trap, ions=None, all=True):
 
         group = "all" if all else ions["uid"]
 
-        sho = _pseudotrap(uid, (kr, anisotropy * kr, kz), group)
+        sho = _pseudotrap(
+            uid, ((1 + anisotropy) * kr, (1 - anisotropy) * kr, kz), group
+        )
 
         odict.update(sho)
         return odict
@@ -466,7 +470,8 @@ def staticquadrupole(uid, ions, trap_frequency_z, offset=(0, 0), all=True):
         f'variable quadEX{uid} atom "v_quadConstZ{uid} * 0.5 * {xpos}"',
         f'variable quadEY{uid} atom "v_quadConstZ{uid} * 0.5 * {ypos}"',
         f'variable quadEZ{uid} atom "v_quadConstZ{uid} * -z"',
-        f"fix {uid} {group} efield v_quadEX{uid} v_quadEY{uid} v_quadEZ{uid}\n",
+        f'variable quadEnergy{uid} atom "0.5 * v_quadConstZ{uid} * (0.5*{xpos}^2 + 0.5*{ypos}^2 + z^2)"',
+        f"fix {uid} {group} efield v_quadEX{uid} v_quadEY{uid} v_quadEZ{uid} energy v_quadEnergy{uid}\n",
     ]
 
     return {"code": lines}
