@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import shutil
 import subprocess
 import warnings
@@ -9,6 +10,7 @@ from pathlib import Path
 
 import h5py
 import jinja2 as j2
+from tqdm import tqdm
 
 from . import utils
 from ._version import __version__
@@ -50,6 +52,7 @@ class Simulation(list):
         self.attrs["thermo"] = 10000
         self.attrs["thermo_styles"] = ["step", "cpu"]
         self.attrs["timestep"] = 1e-6
+        self.attrs["nsteps"] = None  # will be set by evolve
         self.attrs["domain"] = [1e-3, 1e-3, 1e-3]  # length, width, height
         self.attrs["name"] = name
         self.attrs["neighbour"] = {"skin": 1, "list": "nsq"}
@@ -58,6 +61,7 @@ class Simulation(list):
         self.attrs["version"] = __version__
         self.attrs["rigid"] = {"exists": False}
         self.attrs["output_files"] = []
+        self.attrs["progressbar"] = True
 
         directory = (Path.cwd() / name).resolve()
         directory.mkdir(exist_ok=True, parents=True)
@@ -98,6 +102,16 @@ class Simulation(list):
         if timestep < self.attrs["timestep"]:
             print(f"Reducing timestep to {timestep} sec")
             self.attrs["timestep"] = timestep
+
+        nsteps = this.get("nsteps")
+        if nsteps:
+            if self.attrs["nsteps"] is None:
+                self.attrs["nsteps"] = nsteps
+                print(f"Setting number of steps to {nsteps}")
+            else:
+                raise SimulationError(
+                    "Number of steps already set. Cannot set it again."
+                )
 
         super().append(this)
 
@@ -200,7 +214,8 @@ class Simulation(list):
                 "Simulation has executed already. Do not run it again."
             )
 
-        if not shutil.which(self.attrs["executable"]):
+        executable = shutil.which(self.attrs["executable"])
+        if not executable:
             raise SimulationError(
                 f"Could not find executable '{self.attrs['executable']}'. "
                 "Make sure it is installed and in your PATH."
@@ -208,27 +223,92 @@ class Simulation(list):
 
         self._writeinputfile()
 
-        process = subprocess.run(
-            [
-                self.attrs["executable"],
-                "-log",
-                self.attrs["name"] + ".lmp.log",
-                "-in",
-                self.attrs["name"] + ".lammps",
-            ],
-            cwd=self.attrs["directory"],
-            stderr=subprocess.STDOUT,  # redirect stderr to stdout
-            stdout=subprocess.PIPE,  # capture the output
-            text=True,
-            check=False,
-        )
-        self._process_stdout(process.stdout)
+        args = [
+            executable,
+            "-log",
+            self.attrs["name"] + ".lmp.log",
+            "-in",
+            self.attrs["name"] + ".lammps",
+        ]
+        cwd = self.attrs["directory"]
 
+        if self.attrs["progressbar"]:
+            stdout = self._run_with_progressbar(
+                args, cwd, total_steps=self.attrs["nsteps"]
+            )
+        else:
+            stdout = self._run(args, cwd)
+
+        self._process_stdout(stdout)
         self._hasexecuted = True
 
         # save everything at the end
         # so if the simulation fails the h5file is not even created
         self._save_attributes_and_files()
+
+    def _run(self, args, cwd):
+        p = subprocess.run(
+            args,
+            cwd=cwd,
+            stderr=subprocess.STDOUT,  # redirect stderr to stdout
+            stdout=subprocess.PIPE,  # capture the output
+            text=True,
+            check=False,
+        )
+        return p.stdout
+
+    def _run_with_progressbar(self, args, cwd, total_steps=None):
+        """
+        Run a command with a live tqdm bar driven by the thermo 'Step' column.
+        If total_steps is None, the bar is indeterminate and advances by delta in Step.
+        Returns the subprocess.Popen object.
+        """
+
+        # Match lines where the first token is an integer step count (LAMMPS thermo rows)
+        step_line = re.compile(r"^\s*(\d+)\s+\S")
+
+        p = subprocess.Popen(
+            args,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+
+        bar = tqdm(
+            total=total_steps,
+            desc="LAMMPS",
+            unit="step" if total_steps else "iter",
+            leave=True,
+        )
+        last_step = 0
+
+        lines = []
+        try:
+            for raw in p.stdout:
+                lines.append(raw)
+                m = step_line.match(raw)
+                if not m:
+                    continue
+                step = int(m.group(1))
+                if total_steps is None:
+                    inc = max(0, step - last_step)
+                    if inc:
+                        bar.update(inc)
+                else:
+                    if step > bar.n:
+                        bar.n = step
+                        bar.refresh()
+                last_step = step
+        finally:
+            p.wait()
+            stdout = "".join(lines)
+            if total_steps and bar.n < total_steps:
+                bar.n = total_steps
+                bar.refresh()
+            bar.close()
+
+        return stdout
 
     def _save_attributes_and_files(self):
         self.attrs["output_files"].extend(
