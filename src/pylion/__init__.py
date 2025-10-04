@@ -21,6 +21,7 @@ from .functions import (
     thermalvelocities,
     timeaverage,
     trapaqtovoltage,
+    variable,
 )
 from .lammps import lammps
 from .pylion import Attributes, Simulation, SimulationError
@@ -57,6 +58,7 @@ __all__ = [
     "harmonicpotential",
     "staticquadrupole",
     "readdump",
+    "variable",
     # decorators
     "lammps",
 ]

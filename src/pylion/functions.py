@@ -352,13 +352,13 @@ def _pseudotrap(uid, k, group="all"):
 
     sho = [
         "\n# SHO",
-        f"variable k_x{uid}\t\tequal {kx:e}",
-        f"variable k_y{uid}\t\tequal {ky:e}",
-        f"variable k_z{uid}\t\tequal {kz:e}",
-        f'variable fX{uid} atom "-v_k_x{uid} * x"',
-        f'variable fY{uid} atom "-v_k_y{uid} * y"',
-        f'variable fZ{uid} atom "-v_k_z{uid} * z"',
-        f'variable pseudoEnergy{uid} atom "v_k_x{uid} * x * x / 2 + v_k_y{uid} * y * y / 2 + v_k_z{uid} * z * z / 2"',
+        f"variable kx{uid}\t\tequal {kx:e}",
+        f"variable ky{uid}\t\tequal {ky:e}",
+        f"variable kz{uid}\t\tequal {kz:e}",
+        f'variable fX{uid} atom "-v_kx{uid} * x"',
+        f'variable fY{uid} atom "-v_ky{uid} * y"',
+        f'variable fZ{uid} atom "-v_kz{uid} * z"',
+        f'variable pseudoEnergy{uid} atom "0.5 * v_kx{uid} * x^2 + 0.5 * v_ky{uid} * y^2 + 0.5 * v_kz{uid} * z^2"',
         f"fix {uid} {group} addforce v_fX{uid} v_fY{uid} v_fZ{uid} energy v_pseudoEnergy{uid}",
         f"fix_modify {uid} energy yes\n",
     ]
@@ -553,6 +553,19 @@ def squaresum(uid, variables):
     sqs = "+".join(vsq)
 
     lines = [f'variable {uid} atom "{sqs}"\n']
+
+    return {"code": lines}
+
+
+@lammps.variable("var")
+def variable(uid, style, expression):
+    """Creates a lammps variable that calculates the square sum of the
+    input variables.
+
+    :param variables: list of variables
+    """
+
+    lines = [f'variable {uid} {style} "{expression}"\n']
 
     return {"code": lines}
 

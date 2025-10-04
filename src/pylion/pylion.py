@@ -46,6 +46,7 @@ class Simulation(list):
         self.attrs = Attributes()
         self.attrs["gpu"] = None
         self.attrs["executable"] = "lmp"
+        self.attrs["thermo"] = 10000
         self.attrs["thermo_styles"] = ["step", "cpu"]
         self.attrs["timestep"] = 1e-6
         self.attrs["domain"] = [1e-3, 1e-3, 1e-3]  # length, width, height

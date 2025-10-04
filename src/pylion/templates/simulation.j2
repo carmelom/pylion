@@ -46,7 +46,7 @@ group {{ ions.uid }} type {{ ions.uid }}
 timestep {{ timestep }}
 
 # Configuring additional output to flush buffer during simulation...
-thermo 10000
+thermo {{ thermo }}
 thermo_style custom {{ thermo_styles|join(' ') }}
 thermo_modify flush yes
 
