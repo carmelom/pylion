@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import subprocess
+import warnings
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -56,6 +57,7 @@ class Simulation(list):
         self.attrs["template"] = "simulation.j2"
         self.attrs["version"] = __version__
         self.attrs["rigid"] = {"exists": False}
+        self.attrs["output_files"] = []
 
         directory = (Path.cwd() / name).resolve()
         directory.mkdir(exist_ok=True, parents=True)
@@ -206,32 +208,7 @@ class Simulation(list):
 
         self._writeinputfile()
 
-        # def signal_handler(sig, frame):
-        #     print("Simulation terminated by the user.")
-        #     child.terminate()
-        #     # sys.exit(0)
-
-        # signal.signal(signal.SIGINT, signal_handler)
-
-        # child = pexpect.spawn(
-        #     " ".join(
-        #         [
-        #             self.attrs["executable"],
-        #             "-log",
-        #             self.attrs["name"] + ".lmp.log",
-        #             "-in",
-        #             self.attrs["name"] + ".lammps",
-        #         ]
-        #     ),
-        #     timeout=None,
-        #     encoding="utf8",
-        # )
-
-        # self._process_stdout(child)
-        # child.close()
-
-        # TODO: manage SIGINT
-        subprocess.run(
+        process = subprocess.run(
             [
                 self.attrs["executable"],
                 "-log",
@@ -240,7 +217,12 @@ class Simulation(list):
                 self.attrs["name"] + ".lammps",
             ],
             cwd=self.attrs["directory"],
+            stderr=subprocess.STDOUT,  # redirect stderr to stdout
+            stdout=subprocess.PIPE,  # capture the output
+            text=True,
+            check=False,
         )
+        self._process_stdout(process.stdout)
 
         self._hasexecuted = True
 
@@ -249,40 +231,50 @@ class Simulation(list):
         self._save_attributes_and_files()
 
     def _save_attributes_and_files(self):
-        attrs = self.attrs
+        self.attrs["output_files"].extend(
+            [
+                self.attrs["name"] + ".lammps",
+                self.attrs["name"] + ".lmp.log",
+            ]
+        )
 
         # initalise the h5 file
-        h5file = Path(attrs["directory"], attrs["name"] + ".h5")
+        h5file = Path(self.attrs["directory"], self.attrs["name"] + ".h5")
         with h5py.File(h5file, "w") as f:  # noqa: F841
             pass
 
         # save attrs and scripts to h5 file
-        attrs.save(h5file)
+        self.attrs.save(h5file)
         utils._savecallersource(h5file)
 
-        for filename in attrs["output_files"] + [
-            attrs["name"] + ".lmp.log",
-            attrs["name"] + ".lammps",
-        ]:
-            filepath = str(Path(attrs["directory"]) / filename)
+        for filename in self.attrs["output_files"]:
+            filepath = str(Path(self.attrs["directory"]) / filename)
             utils._savescriptsource(h5file, filepath)
 
-    # def _process_stdout(self, child):
-    #     atoms = 0
-    #     for line in child:
-    #         line = line.rstrip("\r\n")
-    #         if line == "Created 1 atoms":
-    #             atoms += 1
-    #             continue
-    #         elif line == "Created 0 atoms":
-    #             raise SimulationError(
-    #                 "lammps created 0 atoms - perhaps you placed ions "
-    #                 "with positions outside the simulation domain?"
-    #             )
+    def _process_stdout(self, stdout):
+        if "ERROR:" in stdout:
+            for line in stdout.splitlines():
+                if "ERROR:" in line:
+                    raise SimulationError(line.strip())
 
-    #         if atoms:
-    #             print(f"Created {atoms} atoms.")
-    #             atoms = False
-    #             continue
+        if "WARNING:" in stdout:
+            for line in stdout.splitlines():
+                if "WARNING:" in line:
+                    warnings.warn(line.strip(), RuntimeWarning)
 
-    #         print(line)
+        atoms = 0
+        for line in stdout.splitlines():
+            line = line.rstrip("\r\n")
+            if line == "Created 1 atoms":
+                atoms += 1
+                continue
+            elif line == "Created 0 atoms":
+                raise SimulationError(
+                    "lammps created 0 atoms - perhaps you placed ions "
+                    "with positions outside the simulation domain?"
+                )
+
+            if atoms:
+                print(f"Created {atoms} atoms.")
+                atoms = False
+                continue
