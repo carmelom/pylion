@@ -15,6 +15,7 @@ from .functions import (
     minimise,
     placeions,
     readdump,
+    readthermo,
     setvelocity,
     squaresum,
     staticquadrupole,
@@ -58,6 +59,7 @@ __all__ = [
     "harmonicpotential",
     "staticquadrupole",
     "readdump",
+    "readthermo",
     "variable",
     # decorators
     "lammps",

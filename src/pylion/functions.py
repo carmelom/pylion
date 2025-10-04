@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 
 from .lammps import lammps
@@ -645,3 +647,80 @@ def readdump(filename):
     steps = np.array(steps, dtype=np.float64)
     data = np.array(data, dtype=np.float64)  # shape=(steps, ions, (x,y,z))
     return steps, data
+
+
+def readthermo(filename: str) -> dict:
+    """
+    Parse the thermodynamic output from a LAMMPS .lmp.log file.
+
+    Returns
+    -------
+    dict[str, np.ndarray]
+        Dictionary mapping each thermo keyword (e.g. "Step", "Temp", "E_pair")
+        to a NumPy array containing all values across all thermo blocks.
+
+    Notes
+    -----
+    - Detects thermo headers dynamically (lines starting with "Step ...").
+    - Supports multiple thermo blocks (e.g. multiple runs).
+    - Converts numeric data to float or int where appropriate.
+    """
+    header_re = re.compile(r"^\s*Step(\s+\S+)+\s*$")
+    data_re = re.compile(r"^\s*-?\d+\s")
+
+    all_data = {}
+    headers = None
+    block_rows = []
+    in_block = False
+
+    with open(filename, "r") as f:
+        for line in f:
+            if header_re.match(line):
+                headers = line.strip().split()
+                block_rows = []
+                in_block = True
+                continue
+
+            if in_block:
+                if data_re.match(line):
+                    parts = line.strip().split()
+                    if len(parts) != len(headers):
+                        continue  # malformed row, skip
+                    block_rows.append(parts)
+                else:
+                    # End of block
+                    if block_rows and headers:
+                        for i, h in enumerate(headers):
+                            col = [r[i] for r in block_rows]
+                            # convert to float or int if possible
+                            try:
+                                if h.lower() == "step":
+                                    vals = np.array(col, dtype=int)
+                                else:
+                                    vals = np.array(col, dtype=float)
+                            except ValueError:
+                                vals = np.array(col, dtype=object)
+                            if h in all_data:
+                                all_data[h] = np.concatenate((all_data[h], vals))
+                            else:
+                                all_data[h] = vals
+                    in_block = False
+                    headers = None
+
+    # Handle if last block reached EOF without termination
+    if in_block and block_rows and headers:
+        for i, h in enumerate(headers):
+            col = [r[i] for r in block_rows]
+            try:
+                if h.lower() == "step":
+                    vals = np.array(col, dtype=int)
+                else:
+                    vals = np.array(col, dtype=float)
+            except ValueError:
+                vals = np.array(col, dtype=object)
+            if h in all_data:
+                all_data[h] = np.concatenate((all_data[h], vals))
+            else:
+                all_data[h] = vals
+
+    return all_data
