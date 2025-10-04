@@ -45,6 +45,9 @@ group {{ ions.uid }} type {{ ions.uid }}
 {% endfor %}
 timestep {{ timestep }}
 
+# Configuring temperature computation
+compute_modify thermo_temp extra/dof 0
+
 # Configuring additional output to flush buffer during simulation...
 thermo {{ thermo }}
 thermo_style custom {{ thermo_styles|join(' ') }}
