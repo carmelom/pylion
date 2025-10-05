@@ -283,7 +283,7 @@ def _rftrap(uid, trap):
     anisotropy = trap.get("anisotropy", 0)
     offset = trap.get("offset", (0, 0))
 
-    odict["timestep"] = 1 / np.max(trap["frequency"]) / 20
+    odict["timestep"] = 1 / np.max(trap["frequency"]) / (2 * np.pi * 10)
 
     lines = [
         f"\n# Creating a Linear Paul Trap... (fixID={uid})",
@@ -424,24 +424,28 @@ def linearpaultrap(uid, trap, ions=None, all=True):
         az = -2 * ar
 
         qr = 2 * charge * voltage / (mass * radius**2 * (2 * np.pi * freq) ** 2)
+        qx = (1 + anisotropy) * qr
+        qy = (1 - anisotropy) * qr
 
-        wr = 2 * np.pi * freq / 2 * np.sqrt(ar + qr**2 / 2)
+        wx = 2 * np.pi * freq / 2 * np.sqrt(ar + qx**2 / 2)
+        wy = 2 * np.pi * freq / 2 * np.sqrt(ar + qy**2 / 2)
         wz = 2 * np.pi * freq / 2 * np.sqrt(az)
 
-        print(f"Frequency of motion: fr = {wr / 2 / np.pi:e}, fz = {wz / 2 / np.pi:e}")
+        print(
+            f"Frequency of motion: fx = {wx / 2 / np.pi:e}, fy = {wy / 2 / np.pi:e}, fz = {wz / 2 / np.pi:e}"
+        )
 
         # Spring constants for force calculation.
-        kr = wr**2 * mass
+        kx = wx**2 * mass
+        ky = wy**2 * mass
         kz = wz**2 * mass
 
         odict = {}
-        odict["timestep"] = 1 / max(wz, wr) / 10
+        odict["timestep"] = 1 / max(wz, wx, wy) / 10
 
         group = "all" if all else ions["uid"]
 
-        sho = _pseudotrap(
-            uid, ((1 + anisotropy) * kr, (1 - anisotropy) * kr, kz), group
-        )
+        sho = _pseudotrap(uid, (kx, ky, kz), group)
 
         odict.update(sho)
         return odict
@@ -502,7 +506,7 @@ def harmonicpotential(uid, ions, trap_frequencies, all=True):
     kz = (2 * np.pi * fz) ** 2 * mass
 
     odict = {}
-    odict["timestep"] = 1 / max(fx, fy, fz) / 10
+    odict["timestep"] = 1 / max(fx, fy, fz) / (2 * np.pi * 10)
     sho = _pseudotrap(uid, (kx, ky, kz), group)
     odict.update(sho)
 
