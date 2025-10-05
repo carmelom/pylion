@@ -59,7 +59,7 @@ def placeions(ions, positions):
 
 
 @lammps.ions
-def createioncloud(ions, radius, number):
+def createioncloud(ions, radius, number, offset=(0, 0, 0)):
     """Creates a cloud of ions that can be added to the trap.
     LAMMPS does have a function that can create ions in a cloud-like
     configuration, but it requires a lattice to be declared, and is
@@ -79,7 +79,11 @@ def createioncloud(ions, radius, number):
         b = 2 * np.pi * np.random.random()
 
         positions.append(
-            [d * np.sin(a) * np.cos(b), d * np.sin(a) * np.sin(b), d * np.cos(a)]
+            [
+                offset[0] + d * np.sin(a) * np.cos(b),
+                offset[1] + d * np.sin(a) * np.sin(b),
+                offset[2] + d * np.cos(a),
+            ]
         )
 
     ions.update({"positions": positions})
@@ -622,7 +626,7 @@ def trapaqtovoltage(ions, trap, a, q):
 def check_particles_in_domain(particles, domain):
     particles = np.asarray(particles)
     domain = np.asarray(domain)
-    return bool(np.all(np.abs(particles) < domain))
+    return bool(np.all(domain[:, 0] < particles) and np.all(particles < domain[:, 1]))
 
 
 def readdump(filename):

@@ -53,7 +53,7 @@ class Simulation(list):
         self.attrs["thermo_styles"] = ["step", "cpu"]
         self.attrs["timestep"] = 1e-6
         self.attrs["nsteps"] = None  # will be set by evolve
-        self.attrs["domain"] = [1e-3, 1e-3, 1e-3]  # length, width, height
+        self.set_domain([1e-3, 1e-3, 1e-3])
         self.attrs["name"] = name
         self.attrs["neighbour"] = {"skin": 1, "list": "nsq"}
         self.attrs["coulombcutoff"] = 10
@@ -78,6 +78,31 @@ class Simulation(list):
             return this["uid"] in self._uids
         except KeyError:
             print("Item does not have a 'uid' key.")
+
+    def set_domain(self, domain):
+        """Set the simulation domain.
+
+        Args:
+            domain (list or tuple): A list or tuple of three elements, each being either
+                a single float (for symmetric domain) or a tuple of two floats (for asymmetric domain).
+                Example: [(-1e-3, 1e-3), (-1e-3, 1e-3), (0, 1e-3)] or [-1e-3, -1e-3, 0] for symmetric.
+        """
+        if len(domain) != 3:
+            raise ValueError("Domain must have three elements for x, y, z dimensions.")
+
+        processed_domain = []
+        for dim in domain:
+            if isinstance(dim, (list, tuple)):
+                if len(dim) != 2:
+                    raise ValueError(
+                        "Each dimension must be a single float or a tuple of two floats."
+                    )
+                processed_domain.append((float(dim[0]), float(dim[1])))
+            else:
+                val = float(dim)
+                processed_domain.append((-val, val))
+
+        self.attrs["domain"] = processed_domain
 
     def append(self, this):
         """Appends the items and checks their attributes.
