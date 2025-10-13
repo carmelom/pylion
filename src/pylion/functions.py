@@ -159,7 +159,7 @@ def thermalvelocities(temperature, zerototalmomentum=True):
         tot = "no"
 
     lines = [
-        f"\nvelocity all create {temperature:e} {seed:d} mom {tot} rot yes dist gaussian\n"
+        f"\nvelocity all create {temperature:e} {seed:d} temp thermo_temp mom {tot} rot yes dist gaussian",
     ]
 
     return {"code": lines}
@@ -241,9 +241,11 @@ def langevinbath(uid, temperature, dampingtime):
     :param dampingtime: effectively defines coupling strength to the bath
     """
 
+    seed = np.random.randint(1, 1e5)
+
     lines = [
         "\n# Adding a langevin bath...",
-        f"fix {uid} all langevin {temperature:e} {temperature:e} {dampingtime:e} 1337\n",
+        f"fix {uid} all langevin {temperature:e} {temperature:e} {dampingtime:e} {seed:d}\n",
     ]
 
     return {"code": lines}

@@ -380,6 +380,6 @@ class Simulation(list):
                 )
 
             if atoms:
-                print(f"Created {atoms} atoms.")
+                # print(f"Created {atoms} atoms.")
                 atoms = False
                 continue
